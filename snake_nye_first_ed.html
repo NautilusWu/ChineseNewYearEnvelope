@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chinese New Year Red Envelope - Enhanced</title>
+    <style>
+        /* Main background styling */
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #FFD700, #FF4500);
+            font-family: Arial, sans-serif;
+        }
+
+        /* Main red envelope container styling */
+        .envelope {
+            position: relative;
+            width: 300px;
+            height: 400px;
+            background: linear-gradient(45deg, #FF0000, #8B0000);
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(139, 0, 0, 0.3);
+            cursor: pointer;
+            transition: transform 0.3s;
+            overflow: hidden;
+        }
+
+        /* Scale pattern overlay on the envelope */
+        .envelope::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 10px,
+                rgba(255, 215, 0, 0.1) 10px,
+                rgba(255, 215, 0, 0.1) 20px
+            );
+            z-index: 1;
+        }
+
+        /* Golden border around the envelope content */
+        .snake-border {
+            position: absolute;
+            width: calc(100% - 40px);
+            height: calc(100% - 40px);
+            top: 20px;
+            left: 20px;
+            border: 2px solid #FFD700;
+            border-radius: 5px;
+            z-index: 2;
+        }
+
+        /* Snake decorations in corners */
+        .snake-corner {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M10,50 Q50,0 90,50 Q50,100 10,50" fill="none" stroke="gold" stroke-width="4"/></svg>');
+            background-size: contain;
+            z-index: 3;
+        }
+
+        /* Position each snake in corners with different rotations */
+        .snake-corner:nth-child(1) { top: 10px; left: 10px; transform: rotate(0deg); }
+        .snake-corner:nth-child(2) { top: 10px; right: 10px; transform: rotate(90deg); }
+        .snake-corner:nth-child(3) { bottom: 10px; left: 10px; transform: rotate(270deg); }
+        .snake-corner:nth-child(4) { bottom: 10px; right: 10px; transform: rotate(180deg); }
+
+        /* Envelope flap that opens */
+        .flap {
+            position: absolute;
+            width: 100%;
+            height: 50%;
+            background: linear-gradient(45deg, #FF0000, #8B0000);
+            border-radius: 10px 10px 0 0;
+            transform-origin: top;
+            transition: transform 0.5s;
+            z-index: 4;
+            /* Add initial transform to show opened state */
+            transform: rotateX(180deg);
+        }
+
+        /* Center content styling (greetings and button) */
+        .content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #FFD700;
+            opacity: 1; /* Show content immediately */
+            transition: opacity 0.5s;
+            z-index: 5;
+        }
+
+        /* Main greeting text styling */
+        .content h2 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Button styling */
+        button {
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            color: #8B0000;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: transform 0.3s;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Button hover effect */
+        button:hover {
+            transform: scale(1.1);
+        }
+
+        /* Enhanced firework styles */
+        .firework {
+            position: fixed;
+            width: 5px;
+            height: 15px; /* Taller for launch effect */
+            background: linear-gradient(#ff8426, #ffb726);
+            border-radius: 50%;
+            animation: launch 1.5s ease-out forwards;
+            z-index: 1001;
+        }
+
+        .firework::before,
+        .firework::after {
+            content: '';
+            position: absolute;
+            width: 5px;
+            height: 15px;
+            background: inherit;
+            border-radius: inherit;
+        }
+
+        .firework::before {
+            transform: rotate(30deg);
+        }
+
+        .firework::after {
+            transform: rotate(-30deg);
+        }
+
+        .explosion-particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            border-radius: 50%;
+            animation: explode var(--duration) ease-out forwards;
+            background: radial-gradient(circle at center, #fff, var(--color));
+            box-shadow: 0 0 6px var(--color), 0 0 12px var(--color);
+        }
+
+        @keyframes launch {
+            0% {
+                transform: translateY(100vh) scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: translateY(20vh) scale(1); /* Even higher mid-point */
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateY(var(--target-y)) scale(1);
+                opacity: 0;
+            }
+        }
+
+        @keyframes explode {
+            0% {
+                transform: translate(var(--x), var(--y)) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(
+                    calc(var(--x) + var(--spread-x)),
+                    calc(var(--y) + var(--spread-y))
+                ) scale(0);
+                opacity: 0;
+            }
+        }
+
+        /* Enhanced celebration overlay */
+        .celebration {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(0, 0, 0, 0.85), rgba(139, 0, 0, 0.95));
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: #FFD700;
+            font-size: 2em;
+            text-align: center;
+            overflow: hidden;
+        }
+
+        /* Enhanced Lucky Coin Styling */
+        .lucky-coin {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(
+                45deg,
+                #FFD700,
+                #FDB931 20%,
+                #FFD700 30%,
+                #FFF3A0 40%,
+                #FFD700 50%,
+                #FDB931 60%,
+                #FFD700 70%,
+                #FFF3A0 80%,
+                #FFD700
+            );
+            border-radius: 50%;
+            animation: coinFall 3s ease-in infinite;
+            box-shadow: 
+                inset 0 0 10px #FDB931,
+                0 0 15px rgba(255, 215, 0, 0.6);
+            transform-style: preserve-3d;
+            perspective: 1000px;
+        }
+
+        .lucky-coin::before {
+            content: '富';  /* "Fu" character for good fortune */
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #8B0000;
+            text-shadow: 1px 1px 2px rgba(139, 0, 0, 0.3);
+            font-weight: bold;
+            font-family: "SimHei", "STHeiti", sans-serif;
+        }
+
+        .lucky-coin::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            right: 2px;
+            bottom: 2px;
+            border-radius: 50%;
+            background: radial-gradient(
+                circle at 30% 30%,
+                rgba(255, 255, 255, 0.4) 0%,
+                rgba(255, 255, 255, 0.1) 30%,
+                transparent 70%
+            );
+            z-index: 1;
+        }
+
+        /* Animation keyframes */
+        @keyframes coinFall {
+            0% {
+                transform: translateY(-100vh) rotateY(0deg) rotateX(45deg);
+                opacity: 1;
+            }
+            50% {
+                transform: translateY(0vh) rotateY(360deg) rotateX(45deg);
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateY(100vh) rotateY(720deg) rotateX(45deg);
+                opacity: 0;
+            }
+        }
+
+        /* Coin shine effect */
+        @keyframes coinShine {
+            0%, 100% {
+                box-shadow: 
+                    inset 0 0 10px #FDB931,
+                    0 0 15px rgba(255, 215, 0, 0.6);
+            }
+            50% {
+                box-shadow: 
+                    inset 0 0 20px #FDB931,
+                    0 0 25px rgba(255, 215, 0, 0.8);
+            }
+        }
+
+        /* Text animation */
+        .celebration h1 {
+            animation: textGlow 2s ease-in-out infinite;
+            text-shadow: 0 0 10px #FFD700;
+        }
+
+        @keyframes textGlow {
+            0%, 100% {
+                text-shadow: 0 0 10px #FFD700;
+            }
+            50% {
+                text-shadow: 0 0 30px #FFD700, 0 0 40px #FF0000;
+            }
+        }
+
+        /* New particle styles */
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            border-radius: 50%;
+            animation: particle-trail 0.8s ease-out forwards;
+            box-shadow: 0 0 4px 1px currentColor;
+            opacity: 0.6;
+        }
+
+        .trail {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            border-radius: 50%;
+            background: rgba(255, 220, 100, 0.3);
+            animation: fade-trail 0.6s ease-out forwards;
+        }
+    </style>
+</head>
+<body>
+    <!-- Main envelope structure -->
+    <div class="envelope">
+        <!-- Decorative elements -->
+        <div class="snake-border"></div>
+        <!-- Corner snake decorations -->
+        <div class="snake-corner"></div>
+        <div class="snake-corner"></div>
+        <div class="snake-corner"></div>
+        <div class="snake-corner"></div>
+        <!-- Opening flap -->
+        <div class="flap"></div>
+        <!-- Envelope content -->
+        <div class="content">
+            <!-- New Year greetings -->
+            <h2>新年快乐</h2>
+            <p>恭喜发财</p>
+            <p style="font-size: 0.8em;">蛇年大吉</p>
+            <button onclick="showCelebration()">开启好运</button>
+        </div>
+    </div>
+
+    <!-- Celebration overlay -->
+    <div class="celebration">
+        <h1>恭喜发财，蛇年大吉！</h1>
+        <p>May the Year of the Snake bring you wisdom and prosperity!</p>
+    </div>
+
+    <script>
+        // Remove envelope click handler since it starts opened
+        /* document.querySelector('.envelope').addEventListener('click', function() {
+            this.classList.add('open');
+        }); */
+
+        // Add opened class to envelope on page load
+        window.addEventListener('load', function() {
+            document.querySelector('.envelope').classList.add('open');
+        });
+
+        function showCelebration() {
+            const celebration = document.querySelector('.celebration');
+            celebration.style.display = 'flex';
+            
+            // Start continuous firework show
+            startContinuousFireworks();
+            
+            // Start continuous coin falling
+            startContinuousCoins();
+        }
+
+        function startContinuousFireworks() {
+            // Initial firework show
+            createFireworkShow();
+            
+            // Continue creating firework shows
+            setInterval(createFireworkShow, 7500); // Start new wave every 7.5 seconds
+        }
+
+        function startContinuousCoins() {
+            // Initial coin drop
+            createLuckyCoins();
+            
+            // Continue creating coins
+            setInterval(createLuckyCoins, 6000); // Start new coin wave every 6 seconds
+        }
+
+        function createFireworkShow() {
+            // Create multiple waves of fireworks with side variation
+            for (let wave = 0; wave < 5; wave++) {
+                setTimeout(() => {
+                    // Left side burst
+                    for (let i = 0; i < 6; i++) {
+                        setTimeout(() => {
+                            createEnhancedFirework();
+                        }, i * 200);
+                    }
+                    
+                    // Right side burst (slightly delayed)
+                    setTimeout(() => {
+                        for (let i = 0; i < 6; i++) {
+                            setTimeout(() => {
+                                createEnhancedFirework();
+                            }, i * 200);
+                        }
+                    }, 750); // Half-wave offset for alternating effect
+                }, wave * 1500);
+            }
+        }
+
+        function createEnhancedFirework() {
+            const firework = document.createElement('div');
+            firework.className = 'firework';
+            
+            // Random starting position - now using full screen width
+            const startX = Math.random() * 100; // Use full width (0-100%)
+            const targetY = -40 + Math.random() * 20; // Higher target (-40 to -20 vh)
+            
+            // Adjust launch position based on screen side
+            if (startX < 50) {
+                // Left side launches
+                firework.style.left = `${startX * 0.8}%`; // 0-40% of screen width
+            } else {
+                // Right side launches
+                firework.style.left = `${60 + (startX * 0.4)}%`; // 60-100% of screen width
+            }
+            
+            firework.style.setProperty('--target-y', `${targetY}vh`);
+            
+            // Random color with more variation
+            const hue = Math.random() * 60 + (Math.random() > 0.5 ? 300 : 0); // Red-gold or blue-green
+            const color = `hsl(${hue}, 100%, 50%)`;
+            firework.style.background = `linear-gradient(${color}, hsl(${hue}, 100%, 70%))`;
+            
+            document.querySelector('.celebration').appendChild(firework);
+
+            // Create explosion after launch
+            setTimeout(() => {
+                createExplosionEffect(startX, targetY, color);
+                firework.remove();
+            }, 1500);
+        }
+
+        function createExplosionEffect(x, y, color) {
+            const particles = 40; // Increased from 32 to 40 particles
+            const angleStep = (2 * Math.PI) / particles;
+            const duration = 0.8 + Math.random() * 0.3;
+
+            for (let i = 0; i < particles; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'explosion-particle';
+                
+                const angle = i * angleStep;
+                const spread = 120 + Math.random() * 60; // Increased spread range
+                const spreadX = Math.cos(angle) * spread;
+                const spreadY = Math.sin(angle) * spread;
+
+                particle.style.setProperty('--x', `${x}%`);
+                particle.style.setProperty('--y', `${y}vh`);
+                particle.style.setProperty('--spread-x', `${spreadX}px`);
+                particle.style.setProperty('--spread-y', `${spreadY}px`);
+                particle.style.setProperty('--duration', `${duration}s`);
+                particle.style.setProperty('--color', color);
+                
+                document.querySelector('.celebration').appendChild(particle);
+                
+                setTimeout(() => particle.remove(), duration * 1000);
+            }
+        }
+
+        function createLuckyCoins() {
+            for (let i = 0; i < 20; i++) {
+                setTimeout(() => {
+                    const coin = document.createElement('div');
+                    coin.className = 'lucky-coin';
+                    
+                    // Random starting position and rotation
+                    coin.style.left = Math.random() * 100 + '%';
+                    coin.style.transform = `rotateY(${Math.random() * 360}deg) rotateX(45deg)`;
+                    
+                    // Random size variation
+                    const size = 35 + Math.random() * 15;
+                    coin.style.width = `${size}px`;
+                    coin.style.height = `${size}px`;
+                    
+                    // Random animation duration
+                    const duration = 2.5 + Math.random() * 1;
+                    coin.style.animationDuration = `${duration}s`;
+                    
+                    document.querySelector('.celebration').appendChild(coin);
+                    
+                    // Add shine animation
+                    coin.style.animation = `
+                        coinFall ${duration}s ease-in infinite,
+                        coinShine ${duration/2}s ease-in-out infinite
+                    `;
+                    
+                    setTimeout(() => coin.remove(), duration * 1000);
+                }, i * 200);
+            }
+        }
+
+        function cleanup() {
+            // Only remove expired elements
+            const elements = document.querySelectorAll('.explosion-particle, .particle, .trail');
+            elements.forEach(element => element.remove());
+        }
+
+        // Add periodic cleanup to prevent memory issues
+        setInterval(cleanup, 5000);
+    </script>
+</body>
+</html>
